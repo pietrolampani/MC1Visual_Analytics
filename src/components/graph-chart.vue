@@ -19,12 +19,8 @@
       <div id="my_dataviz_svg"></div>
       <div id="legends">
         <div id="my_node_legend">
-          <h3>Legend for Nodes</h3>
-          <div v-for="(isActive, type) in nodeFilters" :key="type">
-            <input type="radio" :id="type" :value="type" v-model="nodeFilters[type]" @change="handleNodeFilterChange(type)">
-            <label :for="type">{{ type }}</label>
+            <h3>Legend for Nodes</h3>
           </div>
-        </div>
         <div id="my_link_legend">
           <h3>Legend for Links</h3>
         </div>
@@ -325,62 +321,69 @@ methods: {
         }
     },
     addSearchFunctionality() {
-        try {
-            const searchBarId = document.createElement('input');
-            searchBarId.setAttribute('type', 'text');
-            searchBarId.setAttribute('placeholder', 'Cerca per ID...');
-            const searchBarCountry = document.createElement('input');
-            searchBarCountry.setAttribute('type', 'text');
-            searchBarCountry.setAttribute('placeholder', 'Cerca per country...');
-
-            const dropdownId = document.getElementById('dropdownId');
-            const dropdownCountry = document.getElementById('dropdownCountry');
-            const optionsId = this.originalNodes.map(node => node.id); // Array di ID
-            const optionsCountry = Array.from(new Set(this.originalNodes.map(node => node.country))); // Array di country unici
-
-            // Aggiungi la barra di ricerca per l'ID sopra al menu a discesa
-            dropdownId.parentNode.insertBefore(searchBarId, dropdownId);
-
-            // Aggiungi la barra di ricerca per il campo "country" sopra al menu a discesa
-            dropdownCountry.parentNode.insertBefore(searchBarCountry, dropdownCountry);
-
-            // Aggiungi le opzioni per il campo "country" se sono presenti nel JSON
-            optionsCountry.forEach(country => {
-                const option = document.createElement('option');
-                option.value = country;
-                option.textContent = country;
-                dropdownCountry.appendChild(option);
-            });
-
-            // Aggiungi l'evento di ascolto per la barra di ricerca dell'ID
-            searchBarId.addEventListener('input', () => {
-                const filter = searchBarId.value.toUpperCase();
-                optionsId.forEach(option => {
-                    const optionElement = document.querySelector(`#dropdownId option[value='${option}']`);
-                    if (option.toUpperCase().indexOf(filter) > -1) {
-                        optionElement.style.display = '';
-                    } else {
-                        optionElement.style.display = 'none';
-                    }
-                });
-            });
-
-            // Aggiungi l'evento di ascolto per la barra di ricerca del campo "country"
-            searchBarCountry.addEventListener('input', () => {
-                const filter = searchBarCountry.value.toUpperCase();
-                optionsCountry.forEach(option => {
-                    const optionElement = document.querySelector(`#dropdownCountry option[value='${option}']`);
-                    if (option.toUpperCase().indexOf(filter) > -1) {
-                        optionElement.style.display = '';
-                    } else {
-                        optionElement.style.display = 'none';
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Error adding search functionality:', error);
+  try {
+    const dropdownId = document.getElementById('dropdownId');
+    const dropdownCountry = document.getElementById('dropdownCountry');
+    const optionsId = dropdownId.getElementsByTagName('option');
+    const optionsCountry = dropdownCountry.getElementsByTagName('option');
+    const searchBarId = document.createElement('input');
+    searchBarId.setAttribute('type', 'text');
+    searchBarId.setAttribute('placeholder', 'Cerca per ID...');
+    const searchBarCountry = document.createElement('input');
+    searchBarCountry.setAttribute('type', 'text');
+    searchBarCountry.setAttribute('placeholder', 'Cerca per country...');
+    
+    // Aggiungi la barra di ricerca per l'ID sopra al menu a discesa
+    dropdownId.parentNode.insertBefore(searchBarId, dropdownId);
+    
+    // Filtra i valori unici per il campo "country"
+    const uniqueCountries = Array.from(new Set(Array.from(optionsCountry).map(option => option.textContent)));
+    
+    // Aggiungi le opzioni filtrate per il campo "country" al menu a discesa
+    uniqueCountries.forEach(country => {
+      const option = document.createElement('option');
+      option.value = country;
+      option.textContent = country;
+      dropdownCountry.appendChild(option);
+    });
+    
+    // Aggiungi la barra di ricerca per il campo "country" sopra al menu a discesa
+    dropdownCountry.parentNode.insertBefore(searchBarCountry, dropdownCountry);
+    
+    // Aggiungi un evento di ascolto per filtrare le opzioni del menu a discesa per l'ID
+    searchBarId.addEventListener('input', () => {
+      const searchText = searchBarId.value.toLowerCase();
+      
+      // Filtra le opzioni per l'ID
+      for (let i = 0; i < optionsId.length; i++) {
+        const optionText = optionsId[i].textContent.toLowerCase();
+        if (optionText.indexOf(searchText) !== -1) {
+          optionsId[i].style.display = '';
+        } else {
+          optionsId[i].style.display = 'none';
         }
-    },
+      }
+    });
+
+    // Aggiungi un evento di ascolto per filtrare le opzioni del menu a discesa per il campo "country"
+    searchBarCountry.addEventListener('input', () => {
+      const searchText = searchBarCountry.value.toLowerCase();
+      
+      // Filtra le opzioni per il campo "country"
+      for (let i = 0; i < optionsCountry.length; i++) {
+        const optionText = optionsCountry[i].textContent.toLowerCase();
+        if (optionText.indexOf(searchText) !== -1) {
+          optionsCountry[i].style.display = '';
+        } else {
+          optionsCountry[i].style.display = 'none';
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error adding search functionality:', error);
+  }
+},
+
     createLegend() {
         try {
             // Seleziona il div della legenda per i nodi
@@ -442,18 +445,23 @@ methods: {
         }
     },
     handleNodeFilterChange(type) {
-        try {
-            // Aggiorna lo stato del filtro del nodo
-            this.nodeFilters[type] = !this.nodeFilters[type];
+    try {
+        // Aggiorna lo stato del filtro del nodo o del link
+        this.nodeFilters[type] = !this.nodeFilters[type];
 
-            // Rendi invisibili i nodi che non corrispondono ai filtri
-            d3.selectAll("circle")
-                .filter(d => d.type === type)
-                .style("visibility", this.nodeFilters[type] ? "visible" : "hidden");
-        } catch (error) {
-            console.error('Error handling node filter change:', error);
-        }
-    },
+        // Rendi invisibili i nodi che non corrispondono ai filtri
+        d3.selectAll("circle")
+            .filter(d => d.type === type)
+            .style("visibility", this.nodeFilters[type] ? "visible" : "hidden");
+
+        // Rendi invisibili i link che non corrispondono ai filtri
+        d3.selectAll("line")
+            .filter(d => d.type === type)
+            .style("visibility", this.nodeFilters[type] ? "visible" : "hidden");
+    } catch (error) {
+        console.error('Error handling node filter change:', error);
+    }
+  },
   },
   computed: {
     uniqueCountries() {

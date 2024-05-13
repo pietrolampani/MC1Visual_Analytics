@@ -1,33 +1,54 @@
 <template>
   <div>
-    <div>
-      <form @submit.prevent="search">
-        <label>Select an id</label>
-        <select id="dropdownId" multiple>
-          <option v-for="node in originalNodes" :key="node.id" :value="node.id">{{ node.id }}</option>
-        </select>
-        <label>Select a country</label>
-        <select id="dropdownCountry" multiple>
-          <option v-for="country in uniqueCountries" :key="country" :value="country">{{ country }}</option>
-        </select>
-        <input type="submit" value="Submit">
-      </form>
+    <div class="row">
+      <div class="col">
+        <form @submit.prevent="search">
+          <div class="mb-3 form-row-container">
+            <label for="dropdownId" class="form-label">Select an id</label>
+            <select id="dropdownId" multiple class="form-select">
+              <option v-for="node in originalNodes" :key="node.id" :value="node.id">{{ node.id }}</option>
+            </select>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <!-- Grafico e Legenda -->
-    <div class="graph-container">
-      <div id="my_dataviz_svg"></div>
-      <div id="legends">
-        <div id="my_node_legend">
-            <h3>Legend for Nodes</h3>
+    <div class="row mt-3">
+      <div class="col">
+        <label for="dropdownCountry" class="form-label">Select a country</label>
+        <select id="dropdownCountry" multiple class="form-select">
+          <option v-for="country in uniqueCountries" :key="country" :value="country">{{ country }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col submit-container">
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col">
+        <div class="graph-container">
+          <div id="my_dataviz_svg"></div>
+          <div id="legends">
+            <div id="my_node_legend">
+              <h3>Legend for Nodes</h3>
+            </div>
+            <div id="my_link_legend">
+              <h3>Legend for Links</h3>
+            </div>
           </div>
-        <div id="my_link_legend">
-          <h3>Legend for Links</h3>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+
+
+
 
 
 <script>
@@ -42,6 +63,7 @@ const colorMapNodes = {
     "location": "#00FFFF",
     "event": "#008000",
     "company": "#A52A2A",
+    "unspecified": "gray"
 };
 const colorMapLinks = {
     "ownership": "#FFD700",
@@ -64,7 +86,15 @@ export default {
         "location": true,
         "event": true,
         "company": true,
-      }
+        "unspecified": true
+      },
+      linkFilters: {
+  "ownership": true,
+  "partnership": true,
+  "family_relationship": true, 
+  "membership": true,
+}
+
     };
   },
   mounted() {
@@ -126,7 +156,8 @@ methods: {
 
     //metodo che costruisce il grafico 
     async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
-        try {
+        
+      try { 
             // Se nodes e links sono vuoti o undefined, carica i valori predefiniti da "/MC1.json"
             if (!nodes || !nodes.length || !links || !links.length) {
                 const response = await fetch("/MC1.json");
@@ -136,6 +167,7 @@ methods: {
             }
 
             // Trova il nodo con il maggior numero di link
+        
             const nodeLinksCount = {};
             links.forEach(link => {
                 nodeLinksCount[link.source] = (nodeLinksCount[link.source] || 0) + 1;
@@ -143,6 +175,7 @@ methods: {
             });
 
             const maxLinkCountNode = Object.keys(nodeLinksCount).reduce((a, b) => nodeLinksCount[a] > nodeLinksCount[b] ? a : b);
+           
 
             // Seleziona tutti i link collegati al nodo con il maggior numero di link
             const filteredLinks = links.filter(link => link.source === maxLinkCountNode || link.target === maxLinkCountNode);
@@ -336,10 +369,10 @@ methods: {
     const optionsCountry = dropdownCountry.getElementsByTagName('option');
     const searchBarId = document.createElement('input');
     searchBarId.setAttribute('type', 'text');
-    searchBarId.setAttribute('placeholder', 'Cerca per ID...');
+    searchBarId.setAttribute('placeholder', 'Search by ID...');
     const searchBarCountry = document.createElement('input');
     searchBarCountry.setAttribute('type', 'text');
-    searchBarCountry.setAttribute('placeholder', 'Cerca per country...');
+    searchBarCountry.setAttribute('placeholder', 'Search  country...');
     
     // Aggiungi la barra di ricerca per l'ID sopra al menu a discesa
     dropdownId.parentNode.insertBefore(searchBarId, dropdownId);
@@ -421,7 +454,6 @@ methods: {
                 nodeLegendItem.appendChild(nodeLegendColor);
                 nodeLegendItem.appendChild(nodeLegendLabel);
                 nodeLegendItem.appendChild(nodeLegendCheckbox);
-
                 nodeLegendDiv.appendChild(nodeLegendItem);
             });
 
@@ -443,9 +475,15 @@ methods: {
                 const linkLegendLabel = document.createElement('label');
                 linkLegendLabel.textContent = type;
 
+                const LinkLegendCheckbox = document.createElement('input');
+                LinkLegendCheckbox.type = 'checkbox';
+                LinkLegendCheckbox.checked = true;
+                LinkLegendCheckbox.value = type;
+                LinkLegendCheckbox.addEventListener('change', () => this.handleLinkFilterChange(type));
+
                 linkLegendItem.appendChild(linkLegendColor);
                 linkLegendItem.appendChild(linkLegendLabel);
-
+                linkLegendItem.appendChild(LinkLegendCheckbox);
                 linkLegendDiv.appendChild(linkLegendItem);
             });
         } catch (error) {
@@ -454,22 +492,76 @@ methods: {
     },
     handleNodeFilterChange(type) {
     try {
-        // Aggiorna lo stato del filtro del nodo o del link
+        // Aggiorna lo stato del filtro del nodo
         this.nodeFilters[type] = !this.nodeFilters[type];
 
-        // Rendi invisibili i nodi che non corrispondono ai filtri
+        // Rende invisibili solo i nodi con il tipo corrispondente escludendo il nodo attualmente visualizzato
         d3.selectAll("circle")
-            .filter(d => d.type === type)
+            .filter(d => {
+                // Escludi il nodo attualmente visualizzato
+                if (d === this.currentNode) {
+                    return false;
+                }
+                if (type === "unspecified") {
+                    return !d.type;
+                } else {
+                    return d.type === type;
+                }
+            })
             .style("visibility", this.nodeFilters[type] ? "visible" : "hidden");
 
-        // Rendi invisibili i link che non corrispondono ai filtri
-        d3.selectAll("line")
-            .filter(d => d.type === type)
-            .style("visibility", this.nodeFilters[type] ? "visible" : "hidden");
+        // Rende invisibili solo i link che hanno come target un nodo con il tipo "undefined"
+        if (type === "unspecified" && !this.nodeFilters[type]) {
+            d3.selectAll("line")
+                .filter(d => !d.target.type)
+                .style("visibility", "hidden");
+        }
+
+        // Rende invisibili i link che hanno come source o target un nodo con il tipo specificato
+        if (!this.nodeFilters[type]) {
+            d3.selectAll("line")
+                .filter(d => d.source.type === type || d.target.type === type)
+                .style("visibility", "hidden");
+        } else {
+            // Rende visibili i link quando il filtro viene riattivato
+            d3.selectAll("line")
+                .style("visibility", "visible");
+        }
     } catch (error) {
         console.error('Error handling node filter change:', error);
     }
-  },
+},
+handleLinkFilterChange(type) {
+    try {
+        // Aggiorna lo stato del filtro del link
+        this.linkFilters[type] = !this.linkFilters[type];
+
+        // Rende invisibili i link che non corrispondono ai filtri escludendo il nodo attualmente visualizzato
+        d3.selectAll("line")
+            .filter(d => d.source !== this.currentNode && d.target !== this.currentNode && d.type === type)
+            .style("visibility", this.linkFilters[type] ? "visible" : "hidden");
+
+        // Rende invisibili i nodi che non corrispondono ai filtri dei link in uscita o in ingresso escludendo il nodo attualmente visualizzato
+        d3.selectAll("circle")
+            .style("visibility", d => {
+                const isVisibleOutgoingNode = d3.selectAll("line")
+                    .filter(l => l.source === d && this.linkFilters[l.type]) // Solo i link visibili
+                    .size() > 0;
+                
+                const isVisibleIncomingNode = d3.selectAll("line")
+                    .filter(l => l.target === d && this.linkFilters[l.type]) // Solo i link visibili
+                    .size() > 0;
+
+                // Controlla se il nodo ha un tipo definito o se è collegato a un link visibile
+                return ((this.nodeFilters[d.type] || this.nodeFilters["undefined"] || !d.type) && (isVisibleOutgoingNode || isVisibleIncomingNode)) ? "visible" : "hidden";
+            });
+    } catch (error) {
+        console.error('Error handling link filter change:', error);
+    }
+}
+
+,
+
   },
   computed: {
     uniqueCountries() {
@@ -505,4 +597,28 @@ methods: {
   display: flex;
   align-items: center;
 }
+
+.submit-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px; 
+  margin-bottom: 20px; 
+}
+
+.form-row-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px; 
+}
+
+.form-row-container:last-child {
+  margin-bottom: 0; 
+}
+
+
+.form-row-container .form-label {
+  margin-right: 10px; 
+}
+
 </style>
+

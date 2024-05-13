@@ -91,8 +91,12 @@ methods: {
     },
     async search() {
         try {
+            //Recupera gli attributi selezionati 
             const selectedId = Array.from(document.getElementById('dropdownId').selectedOptions).map(option => option.value);
             const selectedCountry = Array.from(document.getElementById('dropdownCountry').selectedOptions).map(option => option.value);
+
+            console.log(selectedId)
+            console.log(selectedCountry)
 
             // Se non ci sono id o country selezionati, utilizza i nodi e i link originali
             if (selectedId.length === 0 && selectedCountry.length === 0) {
@@ -108,7 +112,8 @@ methods: {
                 // Verifica se il nodo sorgente e il nodo target sono entrambi inclusi nei nodi filtrati
                 return filteredNodes.find(node => node.id === link.source) && filteredNodes.find(node => node.id === link.target);
             });
-
+            console.log(filteredNodes)
+            console.log(filteredLinks)
             // Pulisce il grafico
             d3.select("#my_dataviz_svg").selectAll("*").remove();
 
@@ -275,6 +280,7 @@ methods: {
                 node.attr("transform", transform);
             };
 
+            //fuznione di szoom
             const zoom = d3.zoom()
                 .scaleExtent([1, 128])
                 .on("zoom", zoomed);
@@ -290,6 +296,8 @@ methods: {
     },
     async loadOptions() {
         try {
+
+          //recupera i nomi dei nodi 
             const response = await fetch("/MC1.json");
             const mc1 = await response.json();
 
@@ -298,7 +306,7 @@ methods: {
             const nodes = mc1.nodes; 
 
             console.log('Number of nodes:', nodes.length); // Debug
-
+            //carica i nodi nella select delle option
             if (nodes) {
                 nodes.forEach(node => {
                     console.log('Country:', node.country); // Debug
@@ -307,7 +315,7 @@ methods: {
                     optionId.textContent = node.id;
                     dropdownId.appendChild(optionId);
 
-                    // Aggiunta del controllo di vuotezza del campo country
+                    // controllo di vuotezza del campo country
                     if (node.country && node.country.trim() !== '') {
                         const optionCountry = document.createElement('option');
                         optionCountry.value = node.country;

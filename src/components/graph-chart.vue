@@ -15,10 +15,9 @@
 
     <div class="row mt-3">
       <div class="col">
-        <label for="dropdownCountry" class="form-label">Select a country</label>
-        <select id="dropdownCountry" multiple class="form-select">
-          <option v-for="country in uniqueCountries" :key="country" :value="country">{{ country }}</option>
-        </select>
+        <Multiselect v-model="selectedCountries" :options="uniqueCountries"
+                     :multiple="true" :close-on-select="false" :clear-on-select="false"
+                     :preserve-search="true" :preselect-first="true"></Multiselect>
       </div>
     </div>
 
@@ -49,10 +48,10 @@
 
 
 
-
-
 <script>
 import * as d3 from 'd3';
+import Multiselect from "vue-multiselect";
+
 
 const colorMapNodes = {
     "vessel": "#0000FF",
@@ -73,10 +72,15 @@ const colorMapLinks = {
 };
 
 export default {
+  components:{
+    Multiselect,
+  },
   data() {
     return {
       originalNodes: [], // Aggiungi un array per i nodi originali
       originalLinks: [], // Aggiungi un array per i link originali
+      uniqueCountries: [],
+      selectedCountries: [],
       nodeFilters: { // Aggiungi un oggetto per i filtri dei nodi
         "vessel": true,
         "political_organization": true,
@@ -89,35 +93,32 @@ export default {
         "unspecified": true
       },
       linkFilters: {
-  "ownership": true,
-  "partnership": true,
-  "family_relationship": true, 
-  "membership": true,
-}
+        "ownership": true,
+        "partnership": true,
+        "family_relationship": true,
+        "membership": true,
+      }
 
     };
   },
   mounted() {
     //esportazione dei metodi
     this.loadOriginalData(); // Carica i dati originali al primo caricamento
-    this.addSearchFunctionality();
     this.createLegend();
     // Chiamata a renderGraph senza argomenti
     this.renderGraph();
 },
 methods: {
-    async loadOriginalData() {
-        try {
-            //caricamento del JSON
-            const response = await fetch("/MC1.json");
-            const mc1 = await response.json();
-
-            // Salva i nodi e i link originali
-            this.originalNodes = mc1.nodes;
-            this.originalLinks = mc1.links;
-        } catch (error) {
-            console.error('Error loading original data:', error);
-        }
+      loadOriginalData() {
+        fetch('/MC1.json')
+        .then(res => res.json())
+        .then(data => {
+          this.originalNodes = data.nodes;
+          this.originalLinks = data.links;
+          this.uniqueCountries = Array.from(new Set(this.originalNodes.map(node => node.country)));
+          this.uniqueCountries.sort();
+        })
+        .catch(error => console.log(error));
     },
     async search() {
         try {
@@ -335,7 +336,7 @@ methods: {
             const mc1 = await response.json();
 
             const dropdownId = document.getElementById('dropdownId');
-            const dropdownCountry = document.getElementById('dropdownCountry');
+            // const dropdownCountry = document.getElementById('dropdownCountry');
             const nodes = mc1.nodes; 
 
             console.log('Number of nodes:', nodes.length); // Debug
@@ -349,81 +350,19 @@ methods: {
                     dropdownId.appendChild(optionId);
 
                     // controllo di vuotezza del campo country
-                    if (node.country && node.country.trim() !== '') {
-                        const optionCountry = document.createElement('option');
-                        optionCountry.value = node.country;
-                        optionCountry.textContent = node.country;
-                        dropdownCountry.appendChild(optionCountry);
-                    }
+                    // if (node.country && node.country.trim() !== '') {
+                    //     const optionCountry = document.createElement('option');
+                    //     optionCountry.value = node.country;
+                    //     optionCountry.textContent = node.country;
+                    //     dropdownCountry.appendChild(optionCountry);
+                    // }
                 });
             }
         } catch (error) {
             console.error('Error loading options:', error);
         }
     },
-    addSearchFunctionality() {
-  try {
-    const dropdownId = document.getElementById('dropdownId');
-    const dropdownCountry = document.getElementById('dropdownCountry');
-    const optionsId = dropdownId.getElementsByTagName('option');
-    const optionsCountry = dropdownCountry.getElementsByTagName('option');
-    const searchBarId = document.createElement('input');
-    searchBarId.setAttribute('type', 'text');
-    searchBarId.setAttribute('placeholder', 'Search by ID...');
-    const searchBarCountry = document.createElement('input');
-    searchBarCountry.setAttribute('type', 'text');
-    searchBarCountry.setAttribute('placeholder', 'Search  country...');
-    
-    // Aggiungi la barra di ricerca per l'ID sopra al menu a discesa
-    dropdownId.parentNode.insertBefore(searchBarId, dropdownId);
-    
-    // Filtra i valori unici per il campo "country"
-    const uniqueCountries = Array.from(new Set(Array.from(optionsCountry).map(option => option.textContent)));
-    
-    // Aggiungi le opzioni filtrate per il campo "country" al menu a discesa
-    uniqueCountries.forEach(country => {
-      const option = document.createElement('option');
-      option.value = country;
-      option.textContent = country;
-      dropdownCountry.appendChild(option);
-    });
-    
-    // Aggiungi la barra di ricerca per il campo "country" sopra al menu a discesa
-    dropdownCountry.parentNode.insertBefore(searchBarCountry, dropdownCountry);
-    
-    // Aggiungi un evento di ascolto per filtrare le opzioni del menu a discesa per l'ID
-    searchBarId.addEventListener('input', () => {
-      const searchText = searchBarId.value.toLowerCase();
-      
-      // Filtra le opzioni per l'ID
-      for (let i = 0; i < optionsId.length; i++) {
-        const optionText = optionsId[i].textContent.toLowerCase();
-        if (optionText.indexOf(searchText) !== -1) {
-          optionsId[i].style.display = '';
-        } else {
-          optionsId[i].style.display = 'none';
-        }
-      }
-    });
 
-    // Aggiungi un evento di ascolto per filtrare le opzioni del menu a discesa per il campo "country"
-    searchBarCountry.addEventListener('input', () => {
-      const searchText = searchBarCountry.value.toLowerCase();
-      
-      // Filtra le opzioni per il campo "country"
-      for (let i = 0; i < optionsCountry.length; i++) {
-        const optionText = optionsCountry[i].textContent.toLowerCase();
-        if (optionText.indexOf(searchText) !== -1) {
-          optionsCountry[i].style.display = '';
-        } else {
-          optionsCountry[i].style.display = 'none';
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Error adding search functionality:', error);
-  }
-},
 
     createLegend() {
         try {
@@ -563,19 +502,16 @@ handleLinkFilterChange(type) {
 ,
 
   },
-  computed: {
-    uniqueCountries() {
-      return Array.from(new Set(this.originalNodes.map(node => node.country)));
-    },
-  },
   created() {
     // Carica le opzioni del dropdown all'avvio
-    this.loadOptions();
+    // this.loadOptions();
   },
 };
 </script>
 
 <style>
+@import "vue-multiselect/dist/vue-multiselect.css";
+
 .graph-container {
   display: flex;
 }

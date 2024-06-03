@@ -36,6 +36,23 @@
 
     <div class="row mt-3">
       <div class="col">
+<<<<<<< HEAD
+=======
+        <Multiselect v-model="selectedCountries" :options="uniqueCountries"
+                     :multiple="true" :close-on-select="false" :clear-on-select="false"
+                     :preserve-search="true" :preselect-first="true"></Multiselect>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col submit-container">
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col">
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
         <div class="graph-container">
           <div id="my_dataviz_svg"></div>
           <div id="legends">
@@ -53,9 +70,18 @@
 </template>
 
 
+<<<<<<< HEAD
 <script>
 import * as d3 from 'd3';
 import Multiselect from "vue-multiselect";
+=======
+
+
+<script>
+import * as d3 from 'd3';
+import Multiselect from "vue-multiselect";
+
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
 
 const colorMapNodes = {
   "vessel": "#0000FF",
@@ -76,11 +102,16 @@ const colorMapLinks = {
 };
 
 export default {
+<<<<<<< HEAD
   components: {
+=======
+  components:{
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
     Multiselect,
   },
   data() {
     return {
+<<<<<<< HEAD
       originalNodes: [],
       originalLinks: [],
       uniqueIds: [],
@@ -88,6 +119,13 @@ export default {
       selectedIds: [],
       selectedCountries: [],
       nodeFilters: {
+=======
+      originalNodes: [], // Aggiungi un array per i nodi originali
+      originalLinks: [], // Aggiungi un array per i link originali
+      uniqueCountries: [],
+      selectedCountries: [],
+      nodeFilters: { // Aggiungi un oggetto per i filtri dei nodi
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
         "vessel": true,
         "political_organization": true,
         "person": true,
@@ -104,27 +142,47 @@ export default {
         "family_relationship": true,
         "membership": true,
       }
+<<<<<<< HEAD
     };
   },
   mounted() {
     this.loadOriginalData();
+=======
+
+    };
+  },
+  mounted() {
+    //esportazione dei metodi
+    this.loadOriginalData(); // Carica i dati originali al primo caricamento
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
     this.createLegend();
     this.renderGraph();
+<<<<<<< HEAD
   },
   methods: {
     loadOriginalData() {
       fetch('/MC1.json')
+=======
+},
+methods: {
+      loadOriginalData() {
+        fetch('/MC1.json')
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
         .then(res => res.json())
         .then(data => {
           this.originalNodes = data.nodes;
           this.originalLinks = data.links;
+<<<<<<< HEAD
           this.uniqueIds = data.nodes.map(node => node.id);
+=======
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
           this.uniqueCountries = Array.from(new Set(this.originalNodes.map(node => node.country)));
           this.uniqueCountries.sort();
         })
         .catch(error => console.log(error));
     },
     async search() {
+<<<<<<< HEAD
   try {
     const selectedId = this.selectedIds;
     const selectedCountry = this.selectedCountries;
@@ -155,6 +213,250 @@ export default {
     alert('Si è verificato un errore durante la ricerca.');
   }
 },
+=======
+        try {
+            //Recupera gli attributi selezionati 
+            const selectedId = Array.from(document.getElementById('dropdownId').selectedOptions).map(option => option.value);
+            const selectedCountry = Array.from(document.getElementById('dropdownCountry').selectedOptions).map(option => option.value);
+
+            console.log(selectedId)
+            console.log(selectedCountry)
+
+            // Se non ci sono id o country selezionati, utilizza i nodi e i link originali
+            if (selectedId.length === 0 && selectedCountry.length === 0) {
+                this.renderGraph(this.originalNodes, this.originalLinks);
+                return;
+            }
+
+            // Filtra i nodi da visualizzare in base agli id selezionati
+            const filteredNodes = this.originalNodes.filter(node => selectedId.includes(node.id) || selectedCountry.includes(node.country));
+
+            // Seleziona tutti i link collegati ai nodi filtrati
+            const filteredLinks = this.originalLinks.filter(link => {
+                // Verifica se il nodo sorgente e il nodo target sono entrambi inclusi nei nodi filtrati
+                return filteredNodes.find(node => node.id === link.source) && filteredNodes.find(node => node.id === link.target);
+            });
+            console.log(filteredNodes)
+            console.log(filteredLinks)
+            // Pulisce il grafico
+            d3.select("#my_dataviz_svg").selectAll("*").remove();
+
+            // Renderizza il grafico con i nodi e i link filtrati
+            this.renderGraph(filteredNodes, filteredLinks);
+        } catch (error) {
+            alert('Error performing search:', error);
+        }
+    },
+
+    //metodo che costruisce il grafico 
+    async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
+        
+      try { 
+            // Se nodes e links sono vuoti o undefined, carica i valori predefiniti da "/MC1.json"
+            if (!nodes || !nodes.length || !links || !links.length) {
+                const response = await fetch("/MC1.json");
+                const mc1 = await response.json();
+                nodes = mc1.nodes;
+                links = mc1.links;
+            }
+
+            // Trova il nodo con il maggior numero di link
+        
+            const nodeLinksCount = {};
+            links.forEach(link => {
+                nodeLinksCount[link.source] = (nodeLinksCount[link.source] || 0) + 1;
+                nodeLinksCount[link.target] = (nodeLinksCount[link.target] || 0) + 1;
+            });
+
+            const maxLinkCountNode = Object.keys(nodeLinksCount).reduce((a, b) => nodeLinksCount[a] > nodeLinksCount[b] ? a : b);
+           
+
+            // Seleziona tutti i link collegati al nodo con il maggior numero di link
+            const filteredLinks = links.filter(link => link.source === maxLinkCountNode || link.target === maxLinkCountNode);
+
+            // Seleziona tutti i nodi connessi ai link selezionati
+            const connectedNodes = new Set();
+            filteredLinks.forEach(link => {
+                connectedNodes.add(link.source);
+                connectedNodes.add(link.target);
+            });
+
+            // Inizializzazione del container SVG
+            const width = 7000;
+            const height = 7000;
+            const svg = d3.create("svg")
+                .attr("viewBox", [0, 0, width, height])
+                .attr("width", "auto")
+                .attr("height", "auto");
+
+            // Inizializzazione dei nodi
+            const node = svg.selectAll("circle")
+                .data(nodes.filter(node => connectedNodes.has(node.id)))
+                .enter().append("circle")
+                .attr("r", 10)
+                .attr("fill", d => colorMapNodes[d.type] || "grey") // Usa la mappa dei colori per i nodi
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+
+            // Inizializzazione dei link
+            const link = svg.selectAll("line")
+                .data(filteredLinks)
+                .enter().append("line")
+                .attr("stroke", d => colorMapLinks[d.type] || "grey") // Usa la mappa dei colori per i link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            // Inizializzazione del tooltip
+            const Tooltip = d3.select("#my_dataviz_svg")
+                .append("div")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("background-color", "white")
+                .style("color", "black")
+                .style("border", "solid")
+                .style("border-width", "2px")
+                .style("border-radius", "5px")
+                .style("padding", "10px");
+
+            // Funzione che mostra il tooltip al passaggio del mouse su un nodo
+            const mouseover = function(event, d) {
+                Tooltip
+                    .style("opacity", 1)
+                    .html(`
+                        Name: ${d.id ? d.id : "N/A"}<br>
+                        Country: ${d.country ? d.country : "N/A"}<br>
+                        Type: ${d.type ? d.type : "N/A"}
+                    `)
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY) + "px");
+            };
+
+            // Funzione che nasconde il tooltip se si ci si sposta col mouse da un nodo
+            const mouseleave = function() {
+                Tooltip
+                    .transition()
+                    .duration(200)
+                    .style("opacity", 0);
+            };
+
+            // Funzione che gestisce lo zoom se si clicca su un nodo
+            const clickNode = function(event, d) {
+                // Rimuove l'evidenziazione dai nodi precedentemente cliccati
+                svg.selectAll(".highlight").remove();
+
+                // Evidenzia il nodo cliccato con un cerchio verde fluo
+                d3.select(this)
+                    .append("circle")
+                    .attr("class", "highlight")
+                    .attr("r", 45)
+                    .attr("fill", "lime")
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 2)
+                    .attr("pointer-events", "none");
+
+                // Zoom sul nodo cliccato
+                const {x, y} = d;
+                svg.transition().duration(750).call(
+                    zoom.transform,
+                    d3.zoomIdentity.translate(width / 2 - x, height / 2 - y).scale(64)
+                );
+
+                // Mostra il tooltip
+                Tooltip
+                    .style("opacity", 1)
+                    .html(`
+                        Name: ${d.id ? d.id : "N/A"}<br>
+                        Country: ${d.country ? d.country : "N/A"}<br>
+                        Type: ${d.type ? d.type : "N/A"}
+                    `)
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY) + "px");
+
+                // Esclude l'evento mouseleave
+                Tooltip.on("mouseleave", null);
+            };
+
+            // Assegnazione delle funzioni ai nodi
+            node.on("mouseover", mouseover)
+                .on("mouseleave", mouseleave)
+                .on("click", clickNode);
+
+            // Inizializzazione delle forze e del comportamento dello zoom
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id))
+                .force("charge", d3.forceManyBody().strength(-100))
+                .force("center", d3.forceCenter(width / 2, height / 2));
+
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+            });
+
+            const zoomed = (event) => {
+                const {transform} = event;
+                link.attr("transform", transform);
+                node.attr("transform", transform);
+            };
+
+            //fuznione di szoom
+            const zoom = d3.zoom()
+                .scaleExtent([1, 128])
+                .on("zoom", zoomed);
+
+            svg.call(zoom);
+
+            // Aggiungi il grafico al div
+            document.getElementById("my_dataviz_svg").appendChild(svg.node());
+
+        } catch (error) {
+            console.error('Error rendering graph:', error);
+        }
+    },
+    async loadOptions() {
+        try {
+
+          //recupera i nomi dei nodi 
+            const response = await fetch("/MC1.json");
+            const mc1 = await response.json();
+
+            const dropdownId = document.getElementById('dropdownId');
+            // const dropdownCountry = document.getElementById('dropdownCountry');
+            const nodes = mc1.nodes; 
+
+            console.log('Number of nodes:', nodes.length); // Debug
+            //carica i nodi nella select delle option
+            if (nodes) {
+                nodes.forEach(node => {
+                    console.log('Country:', node.country); // Debug
+                    const optionId = document.createElement('option');
+                    optionId.value = node.id;
+                    optionId.textContent = node.id;
+                    dropdownId.appendChild(optionId);
+
+                    // controllo di vuotezza del campo country
+                    // if (node.country && node.country.trim() !== '') {
+                    //     const optionCountry = document.createElement('option');
+                    //     optionCountry.value = node.country;
+                    //     optionCountry.textContent = node.country;
+                    //     dropdownCountry.appendChild(optionCountry);
+                    // }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading options:', error);
+        }
+    },
+
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
 
     async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
       try {
@@ -420,6 +722,17 @@ export default {
         console.error('Error handling link filter change:', error);
       }
     }
+<<<<<<< HEAD
+=======
+}
+
+,
+
+  },
+  created() {
+    // Carica le opzioni del dropdown all'avvio
+    // this.loadOptions();
+>>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
   },
 };
 </script>

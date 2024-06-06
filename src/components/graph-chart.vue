@@ -11,7 +11,8 @@
                          :close-on-select="false"
                          :clear-on-select="false"
                          :preserve-search="true"
-                         :preselect-first="true">
+                         :preselect-first="true"
+												 id="dropdownId">
             </Multiselect>
           </div>
           <div class="mb-3 form-row-container">
@@ -22,7 +23,8 @@
                          :close-on-select="false"
                          :clear-on-select="false"
                          :preserve-search="true"
-                         :preselect-first="true">
+                         :preselect-first="true"
+												 id="dropdownCountry">
             </Multiselect>
           </div>
           <div class="row mt-3">
@@ -36,8 +38,6 @@
 
     <div class="row mt-3">
       <div class="col">
-<<<<<<< HEAD
-=======
         <Multiselect v-model="selectedCountries" :options="uniqueCountries"
                      :multiple="true" :close-on-select="false" :clear-on-select="false"
                      :preserve-search="true" :preselect-first="true"></Multiselect>
@@ -52,7 +52,6 @@
 
     <div class="row mt-3">
       <div class="col">
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
         <div class="graph-container">
           <div id="my_dataviz_svg"></div>
           <div id="legends">
@@ -70,18 +69,9 @@
 </template>
 
 
-<<<<<<< HEAD
 <script>
 import * as d3 from 'd3';
 import Multiselect from "vue-multiselect";
-=======
-
-
-<script>
-import * as d3 from 'd3';
-import Multiselect from "vue-multiselect";
-
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
 
 const colorMapNodes = {
   "vessel": "#0000FF",
@@ -102,30 +92,18 @@ const colorMapLinks = {
 };
 
 export default {
-<<<<<<< HEAD
   components: {
-=======
-  components:{
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
     Multiselect,
   },
   data() {
     return {
-<<<<<<< HEAD
-      originalNodes: [],
-      originalLinks: [],
-      uniqueIds: [],
-      uniqueCountries: [],
-      selectedIds: [],
-      selectedCountries: [],
-      nodeFilters: {
-=======
       originalNodes: [], // Aggiungi un array per i nodi originali
       originalLinks: [], // Aggiungi un array per i link originali
       uniqueCountries: [],
+uniqueIds: [],
+selectedIds: [],
       selectedCountries: [],
       nodeFilters: { // Aggiungi un oggetto per i filtri dei nodi
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
         "vessel": true,
         "political_organization": true,
         "person": true,
@@ -142,82 +120,32 @@ export default {
         "family_relationship": true,
         "membership": true,
       }
-<<<<<<< HEAD
-    };
-  },
-  mounted() {
-    this.loadOriginalData();
-=======
-
     };
   },
   mounted() {
     //esportazione dei metodi
     this.loadOriginalData(); // Carica i dati originali al primo caricamento
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
     this.createLegend();
     this.renderGraph();
-<<<<<<< HEAD
   },
   methods: {
     loadOriginalData() {
       fetch('/MC1.json')
-=======
-},
-methods: {
-      loadOriginalData() {
-        fetch('/MC1.json')
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
         .then(res => res.json())
         .then(data => {
           this.originalNodes = data.nodes;
           this.originalLinks = data.links;
-<<<<<<< HEAD
           this.uniqueIds = data.nodes.map(node => node.id);
-=======
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
           this.uniqueCountries = Array.from(new Set(this.originalNodes.map(node => node.country)));
           this.uniqueCountries.sort();
         })
         .catch(error => console.log(error));
     },
-    async search() {
-<<<<<<< HEAD
-  try {
-    const selectedId = this.selectedIds;
-    const selectedCountry = this.selectedCountries;
-
-    let filteredNodes = [];
-    let filteredLinks = [];
-
-    if (selectedId.length === 0 && selectedCountry.length === 0) {
-      // Nessun filtro selezionato, mostra il grafico con i dati originali
-      filteredNodes = this.originalNodes;
-      filteredLinks = this.originalLinks;
-    } else {
-      // Applica i filtri
-      filteredNodes = this.originalNodes.filter(node => selectedId.includes(node.id) || selectedCountry.includes(node.country));
-
-      filteredLinks = this.originalLinks.filter(link => {
-        return filteredNodes.find(node => node.id === link.source) && filteredNodes.find(node => node.id === link.target);
-      });
-    }
-
-    // Rimuovi il contenuto esistente del grafico
-    d3.select("#my_dataviz_svg").selectAll("*").remove();
-
-    // Renderizza il grafico con i nodi e i link filtrati
-    this.renderGraph(filteredNodes, filteredLinks);
-  } catch (error) {
-    console.error('Errore durante la ricerca:', error);
-    alert('Si è verificato un errore durante la ricerca.');
-  }
-},
-=======
-        try {
+async search() {
+try {
             //Recupera gli attributi selezionati 
-            const selectedId = Array.from(document.getElementById('dropdownId').selectedOptions).map(option => option.value);
-            const selectedCountry = Array.from(document.getElementById('dropdownCountry').selectedOptions).map(option => option.value);
+            const selectedId = this.selectedIds.map(option => option.value);
+            const selectedCountry = this.selectedCountries.map(option => option.value);
 
             console.log(selectedId)
             console.log(selectedCountry)
@@ -243,7 +171,8 @@ methods: {
 
             // Renderizza il grafico con i nodi e i link filtrati
             this.renderGraph(filteredNodes, filteredLinks);
-        } catch (error) {
+} catch (error) {
+console.error("[GraphChart] Error on search(): ", error);
             alert('Error performing search:', error);
         }
     },
@@ -455,9 +384,6 @@ methods: {
             console.error('Error loading options:', error);
         }
     },
-
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
-
     async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
       try {
         if (!nodes || !nodes.length || !links || !links.length) {
@@ -722,17 +648,10 @@ methods: {
         console.error('Error handling link filter change:', error);
       }
     }
-<<<<<<< HEAD
-=======
-}
-
-,
-
   },
   created() {
     // Carica le opzioni del dropdown all'avvio
-    // this.loadOptions();
->>>>>>> 6ceba1d3a52fb3d1b14fce5b5e9633113cbfb237
+    this.loadOptions();
   },
 };
 </script>

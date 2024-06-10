@@ -41,7 +41,7 @@
         <Multiselect v-model="selectedCountries" :options="uniqueCountries"
                      :multiple="true" :close-on-select="false" :clear-on-select="false"
                      :preserve-search="true" :preselect-first="true"></Multiselect>
-      </div>
+      </div>fix
     </div>
 
     <div class="row mt-3">
@@ -143,12 +143,9 @@ selectedIds: [],
     },
 async search() {
 try {
-            //Recupera gli attributi selezionati 
-            const selectedId = this.selectedIds.map(option => option.value);
-            const selectedCountry = this.selectedCountries.map(option => option.value);
-
-            console.log(selectedId)
-            console.log(selectedCountry)
+            //Recupera gli attributi selezionati
+            const selectedId = this.selectedIds.map(id => id);
+            const selectedCountry = this.selectedCountries.map(c => c);
 
             // Se non ci sono id o country selezionati, utilizza i nodi e i link originali
             if (selectedId.length === 0 && selectedCountry.length === 0) {
@@ -157,19 +154,23 @@ try {
             }
 
             // Filtra i nodi da visualizzare in base agli id selezionati
-            const filteredNodes = this.originalNodes.filter(node => selectedId.includes(node.id) || selectedCountry.includes(node.country));
+            const filteredNodes = this.originalNodes.map(node => ({...node})).filter(node => {console.log(node.id === selectedId[0], node.country === selectedCountry[0]); return selectedId.includes(node.id) ||  selectedCountry.includes(node.country)});
 
             // Seleziona tutti i link collegati ai nodi filtrati
-            const filteredLinks = this.originalLinks.filter(link => {
+												const nodesIds = filteredNodes.map(n => n.id)
+												console.log("ids", nodesIds)
+            const filteredLinks = this.originalLinks.map(link => ({...link})).filter(link => {
                 // Verifica se il nodo sorgente e il nodo target sono entrambi inclusi nei nodi filtrati
-                return filteredNodes.find(node => node.id === link.source) && filteredNodes.find(node => node.id === link.target);
+								console.log("link", link.source, link.target)
+								return nodesIds.includes(link.source) && nodesIds.includes(link.target)
             });
-            console.log(filteredNodes)
-            console.log(filteredLinks)
+            console.log("nodes", filteredNodes)
+            console.log("links", filteredLinks)
             // Pulisce il grafico
             d3.select("#my_dataviz_svg").selectAll("*").remove();
 
             // Renderizza il grafico con i nodi e i link filtrati
+						console.log("values", filteredNodes, filteredLinks)
             this.renderGraph(filteredNodes, filteredLinks);
 } catch (error) {
 console.error("[GraphChart] Error on search(): ", error);
@@ -179,15 +180,15 @@ console.error("[GraphChart] Error on search(): ", error);
 
     //metodo che costruisce il grafico 
     async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
+			console.log("parameters", nodes, links)
         
       try { 
             // Se nodes e links sono vuoti o undefined, carica i valori predefiniti da "/MC1.json"
-            if (!nodes || !nodes.length || !links || !links.length) {
-                const response = await fetch("/MC1.json");
-                const mc1 = await response.json();
-                nodes = mc1.nodes;
-                links = mc1.links;
-            }
+            // if (!(nodes)) {
+            //     nodes = this.originalNodes;
+            // } else if (!(links)) {
+						// 		links = this.originalLinks
+// }
 
             // Trova il nodo con il maggior numero di link
         
@@ -197,7 +198,7 @@ console.error("[GraphChart] Error on search(): ", error);
                 nodeLinksCount[link.target] = (nodeLinksCount[link.target] || 0) + 1;
             });
 
-            const maxLinkCountNode = Object.keys(nodeLinksCount).reduce((a, b) => nodeLinksCount[a] > nodeLinksCount[b] ? a : b);
+            const maxLinkCountNode = Object.keys(nodeLinksCount).reduce((a, b) => nodeLinksCount[a] > nodeLinksCount[b] ? a : b, "");
            
 
             // Seleziona tutti i link collegati al nodo con il maggior numero di link
@@ -215,12 +216,12 @@ console.error("[GraphChart] Error on search(): ", error);
             const height = 7000;
             const svg = d3.create("svg")
                 .attr("viewBox", [0, 0, width, height])
-                .attr("width", "auto")
-                .attr("height", "auto");
+                .attr("width", "700px")
+                .attr("height", "700px");
 
             // Inizializzazione dei nodi
             const node = svg.selectAll("circle")
-                .data(nodes.filter(node => connectedNodes.has(node.id)))
+                .data(nodes)
                 .enter().append("circle")
                 .attr("r", 10)
                 .attr("fill", d => colorMapNodes[d.type] || "grey") // Usa la mappa dei colori per i nodi
@@ -383,152 +384,6 @@ console.error("[GraphChart] Error on search(): ", error);
         } catch (error) {
             console.error('Error loading options:', error);
         }
-    },
-    async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
-      try {
-        if (!nodes || !nodes.length || !links || !links.length) {
-          const response = await fetch("/MC1.json");
-          const mc1 = await response.json();
-          nodes = mc1.nodes;
-          links = mc1.links;
-        }
-
-        const nodeLinksCount = {};
-        links.forEach(link => {
-          nodeLinksCount[link.source] = (nodeLinksCount[link.source] || 0) + 1;
-          nodeLinksCount[link.target] = (nodeLinksCount[link.target] || 0) + 1;
-        });
-
-        const maxLinkCountNode = Object.keys(nodeLinksCount).reduce((a, b) => nodeLinksCount[a] > nodeLinksCount[b] ? a : b);
-
-        const filteredLinks = links.filter(link => link.source === maxLinkCountNode || link.target === maxLinkCountNode);
-
-        const connectedNodes = new Set();
-        filteredLinks.forEach(link => {
-          connectedNodes.add(link.source);
-          connectedNodes.add(link.target);
-        });
-
-        const width = 7000;
-        const height = 7000;
-        const svg = d3.create("svg")
-          .attr("viewBox", [0, 0, width, height])
-          .attr("width", "auto")
-          .attr("height", "auto");
-
-        const node = svg.selectAll("circle")
-          .data(nodes.filter(node => connectedNodes.has(node.id)))
-          .enter().append("circle")
-          .attr("r", 10)
-          .attr("fill", d => colorMapNodes[d.type] || "grey")
-          .attr("cx", d => d.x)
-          .attr("cy", d => d.y);
-
-        const link = svg.selectAll("line")
-          .data(filteredLinks)
-          .enter().append("line")
-          .attr("stroke", d => colorMapLinks[d.type] || "grey")
-          .attr("x1", d => d.source.x)
-          .attr("y1", d => d.source.y)
-          .attr("x2", d => d.target.x)
-          .attr("y2", d => d.target.y);
-
-        const Tooltip = d3.select("#my_dataviz_svg")
-          .append("div")
-          .style("opacity", 0)
-          .attr("class", "tooltip")
-          .style("background-color", "white")
-          .style("color", "black")
-          .style("border", "solid")
-          .style("border-width", "2px")
-          .style("border-radius", "5px")
-          .style("padding", "10px");
-
-        const mouseover = function (event, d) {
-          Tooltip
-            .style("opacity", 1)
-            .html(`
-              Name: ${d.id ? d.id : "N/A"}<br>
-              Country: ${d.country ? d.country : "N/A"}<br>
-              Type: ${d.type ? d.type : "N/A"}
-            `)
-            .style("left", (event.pageX) + "px")
-            .style("top", (event.pageY) + "px");
-        };
-
-        const mouseleave = function () {
-          Tooltip
-            .transition()
-            .duration(200)
-            .style("opacity", 0);
-        };
-
-        const clickNode = function (event, d) {
-          svg.selectAll(".highlight").remove();
-          d3.select(this)
-            .append("circle")
-            .attr("class", "highlight")
-            .attr("r", 45)
-            .attr("fill", "lime")
-            .attr("stroke", "black")
-            .attr("stroke-width", 2)
-            .attr("pointer-events", "none");
-
-          const { x, y } = d;
-          svg.transition().duration(750).call(
-            zoom.transform,
-            d3.zoomIdentity.translate(width / 2 - x, height / 2 - y).scale(64)
-          );
-
-          Tooltip
-            .style("opacity", 1)
-            .html(`
-              Name: ${d.id ? d.id : "N/A"}<br>
-              Country: ${d.country ? d.country : "N/A"}<br>
-              Type: ${d.type ? d.type : "N/A"}
-            `)
-            .style("left", (event.pageX) + "px")
-            .style("top", (event.pageY) + "px");
-
-          Tooltip.on("mouseleave", null);
-        };
-
-        node.on("mouseover", mouseover)
-          .on("mouseleave", mouseleave)
-          .on("click", clickNode);
-
-        const simulation = d3.forceSimulation(nodes)
-          .force("link", d3.forceLink(links).id(d => d.id))
-          .force("charge", d3.forceManyBody().strength(-100))
-          .force("center", d3.forceCenter(width / 2, height / 2));
-
-        simulation.on("tick", () => {
-          link
-            .attr("x1", d => d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
-
-          node
-            .attr("cx", d => d.x)
-            .attr("cy", d => d.y);
-        });
-
-        const zoomed = (event) => {
-          const { transform } = event;
-          link.attr("transform", transform);
-          node.attr("transform", transform);
-        };
-
-        const zoom = d3.zoom()
-          .scaleExtent([1, 128])
-          .on("zoom", zoomed);
-
-        svg.call(zoom);
-        document.getElementById("my_dataviz_svg").appendChild(svg.node());
-      } catch (error) {
-        console.error('Error rendering graph:', error);
-      }
     },
     createLegend() {
       try {

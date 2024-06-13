@@ -84,6 +84,7 @@
 <script>
 import * as d3 from "d3";
 import Multiselect from "vue-multiselect";
+import { toRaw } from "vue";
 
 const colorMapNodes = {
   vessel: "#0000FF",
@@ -161,8 +162,8 @@ export default {
         //Recupera gli attributi selezionati
         const selectedId = this.selectedIds.map((id) => id);
         const selectedCountry = this.selectedCountries.map((c) => c);
-        let filteredNodes = this.originalNodes.map((n) => ({ ...n }));
-        let filteredLinks = this.originalLinks.map((l) => ({ ...l }));
+        let filteredNodes = this.originalNodes.map((n) => toRaw(n));
+        let filteredLinks = this.originalLinks.map((l) => toRaw(l));
 
         const filterLinks = (allNodes, country) => {
           return filteredLinks.filter((link) => {
@@ -170,15 +171,29 @@ export default {
             const hasSource = selectedId.includes(link.source);
             const uniqueNodes = filteredNodes.map((n) => n.id);
 
+            const links = {};
+
+            for (const key of filteredNodes.map((n) => n.id)) {
+              links[key] = [];
+            }
+
             if (hasSource || hasTarget) {
               const linkedNode = allNodes.find((n) =>
                 hasTarget ? n.id === link.source : n.id === link.target
               );
               if (country)
                 if (!selectedCountry.includes(linkedNode.country)) return false;
-              if (linkedNode && !uniqueNodes.includes({ ...linkedNode }.id)) {
-                filteredNodes.push({ ...linkedNode });
-                uniqueNodes.push({ ...linkedNode }.id);
+              // Se il link non è già stato segnato, lo aggiunge
+              const key = hasTarget ? link.target : link.source;
+              if (
+                linkedNode &&
+                !links[key].find((id) => id === { ...linkedNode }.id)
+              ) {
+                if (!uniqueNodes.includes({ ...linkedNode }.id)) {
+                  filteredNodes.push({ ...linkedNode });
+                  uniqueNodes.push({ ...linkedNode }.id);
+                }
+                links[key].push({ ...linkedNode }.id);
                 return true;
               }
             }
@@ -197,7 +212,7 @@ export default {
           filteredLinks = filterLinks(
             this.originalNodes,
             !!selectedCountry.length
-          ).map((l) => ({ ...l }));
+          ); //.map((l) => {l.source = l.source.value; l.target = l.target.value; return l});
         } else if (selectedCountry.length) {
           // Se almeno una country è selezionata...
           filteredNodes = filteredNodes
@@ -221,13 +236,6 @@ export default {
     //metodo che costruisce il grafico
     async renderGraph(nodes = this.originalNodes, links = this.originalLinks) {
       try {
-        // Se nodes e links sono vuoti o undefined, carica i valori predefiniti da "/MC1.json"
-        // if (!(nodes)) {
-        //     nodes = this.originalNodes;
-        // } else if (!(links)) {
-        // 		links = this.originalLinks
-        // }
-
         // Trova il nodo con il maggior numero di link
 
         const nodeLinksCount = {};
@@ -242,10 +250,11 @@ export default {
         );
 
         // Seleziona tutti i link collegati al nodo con il maggior numero di link
-        const filteredLinks = links.filter(
-          (link) =>
-            link.source === maxLinkCountNode || link.target === maxLinkCountNode
-        );
+        const filteredLinks = links;
+        // .filter(
+        //          (link) =>
+        //           (link.source == maxLinkCountNode || link.target == maxLinkCountNode)
+        //        );
 
         // Seleziona tutti i nodi connessi ai link selezionati
         const connectedNodes = new Set();
